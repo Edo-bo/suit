@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suit PvP - Cari Lawan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #111827;
+            color: #e5e7eb;
+        }
+        .digital-glow {
+            text-shadow: 0 0 5px #0ea5e9, 0 0 10px #0ea5e9;
+        }
+        .card-bg {
+            background-color: rgba(31, 41, 55, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(55, 65, 81, 0.5);
+        }
+        .btn-primary {
+            background-color: #0ea5e9;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #0284c7;
+            box-shadow: 0 0 15px #0ea5e9;
+        }
+        .btn-danger {
+            background-color: #dc2626;
+        }
+        .btn-danger:hover {
+             background-color: #b91c1c;
+        }
+        .choice-btn.selected {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 15px #0ea5e9;
+            transform: scale(1.1);
+        }
+        .opponent-choice {
+            filter: blur(5px);
+            transition: filter 0.3s ease-in-out;
+        }
+        .opponent-choice.revealed {
+             filter: blur(0px);
+        }
+        /* Animasi untuk timer */
+        @keyframes pulse {
+            50% { opacity: .5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Kontainer utama untuk mengatur tampilan -->
+    <div id="app-container" class="w-full max-w-2xl text-center">
+
+        <!-- 1. Layar Login Pengguna -->
+        <div id="user-login-screen">
+            <div class="card-bg p-8 rounded-2xl">
+                <h1 class="text-3xl font-bold text-sky-400 mb-4 digital-glow">Selamat Datang di Arena PvP</h1>
+                <p class="text-gray-400 mb-6">Masukkan data diri untuk masuk ke lobi.</p>
+                <form id="user-form">
+                    <input type="text" id="name" placeholder="Nama Anda" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-4 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <input type="text" id="username" placeholder="Username (tanpa @)" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-6 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
+                    <button type="submit" class="w-full btn-primary text-white font-bold py-3 px-6 rounded-lg transition-colors text-lg">Masuk Lobi</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 2. Layar Lobi -->
+        <div id="lobby-screen" class="hidden">
+            <div class="card-bg p-8 rounded-2xl">
+                <h1 class="text-3xl font-bold text-sky-400 mb-2">Lobi Tunggu</h1>
+                <p class="text-gray-300 mb-6">Anda siap untuk bertarung, <span id="lobby-player-name" class="font-bold text-sky-300"></span>!</p>
+                <button id="find-match-btn" class="w-full btn-primary text-white font-bold py-4 px-6 rounded-lg transition-colors text-xl">
+                    <span id="find-match-text">Cari Lawan</span>
+                    <div id="spinner" class="hidden inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-e-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Layar Menunggu Lawan (dengan Timer) -->
+        <div id="waiting-screen" class="hidden">
+             <div class="card-bg p-8 rounded-2xl">
+                <h1 class="text-3xl font-bold text-sky-400 mb-4 animate-pulse">Mencari Lawan...</h1>
+                <p class="text-gray-300 mb-6">Harap tunggu, sistem sedang mencarikan Anda lawan.</p>
+                <div class="text-6xl font-bold text-sky-200" id="timer">30</div>
+                <p class="text-gray-400 mt-2">detik tersisa</p>
+                <button id="cancel-search-btn" class="mt-6 w-full btn-danger text-white font-bold py-3 px-6 rounded-lg transition-colors">Batalkan Pencarian</button>
+            </div>
+        </div>
+
+        <!-- 4. Arena Permainan -->
+        <div id="game-screen" class="hidden">
+            <div class="card-bg p-6 md:p-8 rounded-2xl">
+                <!-- Info Pemain -->
+                <div class="flex justify-between items-center text-xl font-bold mb-6">
+                    <div class="w-2/5 text-left">
+                        <p id="game-player1-name" class="truncate text-green-400"></p>
+                    </div>
+                    <div class="text-2xl text-gray-400">VS</div>
+                    <div class="w-2/5 text-right">
+                        <p id="game-player2-name" class="truncate text-red-400"></p>
+                    </div>
+                </div>
+
+                <!-- Status Permainan -->
+                 <div class="h-16 flex items-center justify-center">
+                    <p id="game-status" class="text-2xl font-semibold">&nbsp;</p>
+                </div>
+
+                <!-- Pilihan Lawan (Tersembunyi) -->
+                <div class="mb-6 h-28 flex justify-center items-center">
+                    <div id="opponent-choice-display" class="hidden">
+                        <p class="text-gray-400 mb-2">Lawan Memilih:</p>
+                        <img id="opponent-choice-img" class="opponent-choice" src="https://img.icons8.com/ios-filled/100/38bdf8/question-mark.png" alt="Pilihan Lawan" />
+                    </div>
+                </div>
+
+                <!-- Pilihan Pemain -->
+                <div>
+                    <h2 class="text-xl font-bold mb-4">PILIH LANGKAHMU:</h2>
+                    <div id="player-choices" class="flex justify-center gap-4 md:gap-8">
+                        <button class="choice-btn p-4 rounded-full bg-gray-800" data-choice="batu">
+                            <img src="https://img.icons8.com/ios-filled/100/f0f9ff/rock.png" alt="Batu"/>
+                        </button>
+                        <button class="choice-btn p-4 rounded-full bg-gray-800" data-choice="gunting">
+                            <img src="https://img.icons8.com/ios-filled/100/f0f9ff/scissors.png" alt="Gunting"/>
+                        </button>
+                        <button class="choice-btn p-4 rounded-full bg-gray-800" data-choice="kertas">
+                            <img src="https://img.icons8.com/ios-filled/100/f0f9ff/paper.png" alt="Kertas"/>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Notifikasi Hasil/Error -->
+        <div id="notification-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+            <div class="card-bg p-8 rounded-2xl w-full max-w-sm text-center">
+                <h2 id="notification-title" class="text-2xl font-bold mb-4">Notifikasi</h2>
+                <p id="notification-message" class="text-gray-300 mb-6"></p>
+                <button id="close-notification-btn" class="btn-primary text-white font-bold py-2 px-8 rounded-lg transition-colors">OK</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, addDoc, doc, setDoc, onSnapshot, deleteDoc, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // --- KONFIGURASI ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDaR4-Y7tTw8RkazK5TDxFqn27szK3RjqQ",
+            authDomain: "shop-edo.firebaseapp.com",
+            projectId: "shop-edo",
+            storageBucket: "shop-edo.firebasestorage.app",
+            messagingSenderId: "595804367548",
+            appId: "1:595804367548:web:14c9b484b69d2e99af7eb9",
+            measurementId: "G-JX4WKYZE1D"
+        };
+        const TOKEN_BOT = "8469497140:AAE1Nfw2MwgX_QN63jn_8JOD6tNcIG09dpo";
+        const ID_SALURAN = "7893367645";
+        const WAIT_TIME = 30; // Detik
+
+        // --- Inisialisasi Firebase ---
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- Variabel State Aplikasi ---
+        let currentUser = {};
+        let gameRoomId = null;
+        let unsubscribeRoom = null; // Untuk listener onSnapshot
+        let waitTimerInterval = null;
+        let waitTimeout = null;
+
+        // --- Referensi Elemen DOM ---
+        const screens = {
+            login: document.getElementById('user-login-screen'),
+            lobby: document.getElementById('lobby-screen'),
+            waiting: document.getElementById('waiting-screen'),
+            game: document.getElementById('game-screen'),
+        };
+        const userForm = document.getElementById('user-form');
+        const findMatchBtn = document.getElementById('find-match-btn');
+        const cancelSearchBtn = document.getElementById('cancel-search-btn');
+        const choiceButtons = document.querySelectorAll('.choice-btn');
+        const notificationModal = document.getElementById('notification-modal');
+        const closeNotificationBtn = document.getElementById('close-notification-btn');
+
+        // --- Fungsi Helper ---
+        function showScreen(screenName) {
+            Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+            if (screens[screenName]) {
+                screens[screenName].classList.remove('hidden');
+            }
+        }
+
+        function showNotification(title, message, onOk = () => {}) {
+            document.getElementById('notification-title').textContent = title;
+            document.getElementById('notification-message').innerHTML = message; // Use innerHTML for potential formatting
+            notificationModal.classList.remove('hidden');
+            closeNotificationBtn.onclick = () => {
+                notificationModal.classList.add('hidden');
+                onOk();
+            };
+        }
+
+        // --- Logika Utama Aplikasi ---
+        userForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            currentUser.name = document.getElementById('name').value;
+            currentUser.username = document.getElementById('username').value;
+            currentUser.uid = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+            
+            document.getElementById('lobby-player-name').textContent = currentUser.name;
+            showScreen('lobby');
+        });
+
+        findMatchBtn.addEventListener('click', async () => {
+            document.getElementById('find-match-text').classList.add('hidden');
+            document.getElementById('spinner').classList.remove('hidden');
+            findMatchBtn.disabled = true;
+            await findOrCreateMatch();
+        });
+
+        cancelSearchBtn.addEventListener('click', async () => {
+             if (gameRoomId) {
+                await deleteDoc(doc(db, "game_rooms", gameRoomId));
+             }
+             resetToLobby();
+        });
+
+        async function findOrCreateMatch() {
+            const roomsRef = collection(db, "game_rooms");
+            const q = query(roomsRef, where("status", "==", "waiting"));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                // Tidak ada room, buat baru
+                await createNewRoom();
+            } else {
+                // Ada room, gabung
+                const roomDoc = querySnapshot.docs[0];
+                await joinRoom(roomDoc.id);
+            }
+        }
+
+        async function createNewRoom() {
+            showScreen('waiting');
+            startWaitingTimer();
+
+            const roomData = {
+                player1: currentUser,
+                player2: null,
+                status: "waiting",
+                createdAt: serverTimestamp(),
+                player1_choice: null,
+                player2_choice: null
+            };
+            const newRoomRef = await addDoc(collection(db, "game_rooms"), roomData);
+            gameRoomId = newRoomRef.id;
+            listenToRoomUpdates(gameRoomId);
+        }
+
+        async function joinRoom(roomId) {
+            gameRoomId = roomId;
+            const roomRef = doc(db, "game_rooms", gameRoomId);
+            await updateDoc(roomRef, {
+                player2: currentUser,
+                status: "playing"
+            });
+            listenToRoomUpdates(gameRoomId);
+        }
+        
+        function listenToRoomUpdates(roomId) {
+            if (unsubscribeRoom) unsubscribeRoom(); // Hentikan listener lama jika ada
+            
+            unsubscribeRoom = onSnapshot(doc(db, "game_rooms", roomId), (docSnapshot) => {
+                if (!docSnapshot.exists()) {
+                    // Dokumen dihapus (misal karena timeout)
+                    if(document.getElementById('waiting-screen').classList.contains('hidden') === false){
+                       showNotification("Pencarian Dibatalkan", "Maaf, tidak ada lawan yang ditemukan dalam waktu 30 detik.");
+                    }
+                    resetToLobby();
+                    return;
+                }
+
+                const roomData = docSnapshot.data();
+                
+                // Jika lawan bergabung
+                if (roomData.status === 'playing' && roomData.player2) {
+                    stopWaitingTimer();
+                    startGame(roomData);
+                }
+
+                // Update saat permainan berlangsung
+                if (roomData.status === 'playing') {
+                    handleGameProgress(roomData);
+                }
+            });
+        }
+
+        function startGame(roomData) {
+            showScreen('game');
+            document.getElementById('game-player1-name').textContent = roomData.player1.name;
+            document.getElementById('game-player2-name').textContent = roomData.player2.name;
+            document.getElementById('game-status').textContent = "Pilih langkahmu!";
+        }
+
+        function handleGameProgress(roomData) {
+            const isPlayer1 = currentUser.uid === roomData.player1.uid;
+            const myChoice = isPlayer1 ? roomData.player1_choice : roomData.player2_choice;
+            const opponentChoice = isPlayer1 ? roomData.player2_choice : roomData.player1_choice;
+
+            if (myChoice) {
+                // Tampilkan pilihan lawan sebagai tersembunyi jika lawan belum memilih
+                if (opponentChoice === null) {
+                    document.getElementById('opponent-choice-display').classList.remove('hidden');
+                    document.getElementById('game-status').textContent = "Menunggu lawan...";
+                }
+            }
+            
+            // Jika kedua pemain sudah memilih
+            if (roomData.player1_choice && roomData.player2_choice) {
+                if(unsubscribeRoom) unsubscribeRoom(); // Berhenti listen agar tidak trigger ulang
+                determineWinner(roomData);
+            }
+        }
+
+        choiceButtons.forEach(button => {
+            button.addEventListener('click', async () => {
+                const choice = button.dataset.choice;
+                choiceButtons.forEach(btn => btn.classList.remove('selected'));
+                button.classList.add('selected');
+                button.disabled = true;
+
+                const roomRef = doc(db, "game_rooms", gameRoomId);
+                const isPlayer1 = (await getDoc(roomRef)).data().player1.uid === currentUser.uid;
+                
+                if (isPlayer1) {
+                    await updateDoc(roomRef, { player1_choice: choice });
+                } else {
+                    await updateDoc(roomRef, { player2_choice: choice });
+                }
+            });
+        });
+
+        async function determineWinner(roomData) {
+            const p1c = roomData.player1_choice;
+            const p2c = roomData.player2_choice;
+            let winner = null; // null for draw
+
+            if (p1c === p2c) {
+                winner = null;
+            } else if (
+                (p1c === 'batu' && p2c === 'gunting') ||
+                (p1c === 'gunting' && p2c === 'kertas') ||
+                (p1c === 'kertas' && p2c === 'batu')
+            ) {
+                winner = roomData.player1;
+            } else {
+                winner = roomData.player2;
+            }
+
+            // Reveal opponent's choice
+            const isPlayer1 = currentUser.uid === roomData.player1.uid;
+            const opponentChoice = isPlayer1 ? roomData.player2_choice : roomData.player1_choice;
+            const opponentImg = document.getElementById('opponent-choice-img');
+            opponentImg.src = `https://img.icons8.com/ios-filled/100/38bdf8/${opponentChoice === 'batu' ? 'rock' : opponentChoice}.png`;
+            opponentImg.classList.add('revealed');
+
+
+            let title = "";
+            let message = `Hasil: ${p1c} (Anda) vs ${p2c} (Lawan).`;
+            if (winner === null) {
+                title = "Hasil Seri!";
+                message = `Kalian berdua memilih ${p1c}.`;
+            } else if (winner.uid === currentUser.uid) {
+                title = "Anda Menang!";
+                message = `${p1c} mengalahkan ${p2c}.<br>Notifikasi dikirim!`;
+                await saveWinAndNotify(winner);
+            } else {
+                title = "Anda Kalah!";
+                message = `${p2c} (lawan) mengalahkan ${p1c}.`;
+            }
+
+            document.getElementById('game-status').textContent = title;
+
+            // Hapus room setelah beberapa saat dan tampilkan notifikasi
+            setTimeout(async () => {
+                if (gameRoomId) {
+                    await deleteDoc(doc(db, "game_rooms", gameRoomId));
+                }
+                showNotification(title, message, () => resetToLobby());
+            }, 2000); // Tunda 2 detik agar pemain bisa lihat hasilnya
+        }
+
+        async function saveWinAndNotify(winnerData) {
+             const winData = {
+                name: winnerData.name,
+                username: winnerData.username,
+                score: 1, // PvP, jadi skor per menang
+                bonus: 250,
+                timestamp: serverTimestamp()
+            };
+
+            await addDoc(collection(db, "wins"), winData);
+
+            const now = new Date();
+            const winDate = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const winTime = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            const message = `
+ðŸ”¥ **PEMENANG PvP BARU** ðŸ”¥
+
+*Nama:* ${winData.name}
+*Username:* @${winData.username}
+*Tanggal Menang:* ${winDate}
+*Waktu:* ${winTime} WIB
+
+*Jenis Kemenangan:* Player vs Player
+*Bonus:* *${winData.bonus} Poin*
+
+Selamat atas kemenangan duelnya! ðŸ¥‡
+            `;
+
+            fetch(`https://api.telegram.org/bot${TOKEN_BOT}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: ID_SALURAN, text: message, parse_mode: 'Markdown' })
+            });
+        }
+        
+        function startWaitingTimer() {
+            let timeLeft = WAIT_TIME;
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = timeLeft;
+
+            waitTimerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(waitTimerInterval);
+                }
+            }, 1000);
+
+            waitTimeout = setTimeout(async () => {
+                if(gameRoomId) {
+                    await deleteDoc(doc(db, "game_rooms", gameRoomId));
+                }
+            }, WAIT_TIME * 1000);
+        }
+
+        function stopWaitingTimer() {
+            clearInterval(waitTimerInterval);
+            clearTimeout(waitTimeout);
+            waitTimerInterval = null;
+            waitTimeout = null;
+        }
+
+        function resetToLobby() {
+            if (unsubscribeRoom) unsubscribeRoom();
+            stopWaitingTimer();
+            
+            gameRoomId = null;
+            unsubscribeRoom = null;
+
+            // Reset UI
+            showScreen('lobby');
+            document.getElementById('find-match-text').classList.remove('hidden');
+            document.getElementById('spinner').classList.add('hidden');
+            findMatchBtn.disabled = false;
+            choiceButtons.forEach(btn => {
+                btn.classList.remove('selected');
+                btn.disabled = false;
+            });
+            document.getElementById('opponent-choice-display').classList.add('hidden');
+            document.getElementById('opponent-choice-img').classList.remove('revealed');
+             document.getElementById('opponent-choice-img').src = `https://img.icons8.com/ios-filled/100/38bdf8/question-mark.png`;
+        }
+
+        // --- Inisialisasi Aplikasi ---
+        showScreen('login');
+    </script>
+</body>
+</html>
