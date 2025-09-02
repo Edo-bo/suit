@@ -1,0 +1,82 @@
+:root {
+    --primary-color: #6a11cb;
+    --secondary-color: #2575fc;
+    --background-color: #f0f2f5;
+    --text-color: #333;
+    --card-bg: #ffffff;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    --font-family: 'Poppins', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    overflow-x: hidden;
+}
+
+/* --- Menu & Navigasi --- */
+.menu-toggle {
+    position: fixed; top: 20px; left: 20px; z-index: 1001;
+    background: var(--card-bg); border: none; width: 50px; height: 50px;
+    border-radius: 50%; cursor: pointer; box-shadow: var(--shadow);
+    display: flex; justify-content: center; align-items: center;
+}
+.hamburger { width: 25px; height: 2px; background: var(--text-color); position: relative; transition: all 0.3s ease; }
+.hamburger::before, .hamburger::after { content: ''; position: absolute; width: 25px; height: 2px; background: var(--text-color); transition: all 0.3s ease; }
+.hamburger::before { transform: translateY(-8px); }
+.hamburger::after { transform: translateY(8px); }
+.menu-toggle.active .hamburger { background: transparent; transform: rotate(180deg); }
+.menu-toggle.active .hamburger::before { transform: rotate(45deg); }
+.menu-toggle.active .hamburger::after { transform: rotate(-45deg); }
+
+.sidebar {
+    position: fixed; top: 0; left: -280px; width: 260px; height: 100vh;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    padding-top: 80px; transition: left 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+    z-index: 1000; box-shadow: 5px 0 25px rgba(0,0,0,0.1);
+}
+.sidebar.active { left: 0; }
+.sidebar ul { list-style: none; }
+.sidebar ul li a { color: white; text-decoration: none; font-size: 1.1rem; font-weight: 500; display: block; padding: 15px 30px; transition: background 0.2s; }
+.sidebar ul li a:hover { background: rgba(255, 255, 255, 0.1); }
+
+/* --- Konten Utama & Halaman --- */
+#main-content { transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1); }
+.page { display: none; min-height: 100vh; justify-content: center; align-items: center; text-align: center; padding: 20px; animation: fadeIn 0.5s ease-in-out; }
+.page.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.page-container {
+    max-width: 550px; width: 100%; background: var(--card-bg);
+    padding: 30px 40px; border-radius: 16px; box-shadow: var(--shadow);
+}
+h1, h2 { margin-bottom: 15px; color: var(--primary-color); font-weight: 600; }
+p { margin-bottom: 25px; line-height: 1.7; color: #555; }
+
+/* --- Tombol & Form --- */
+button, .cta-button {
+    padding: 12px 28px; border: none; border-radius: 50px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    color: white; font-size: 1rem; cursor: pointer;
+    transition: all 0.3s; font-weight: 500; letter-spacing: 0.5px;
+    text-decoration: none; display: inline-block;
+}
+button:hover, .cta-button:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); }
+.google-btn { background: #fff; color: #444; border: 1px solid #ddd; display: inline-flex; align-items: center; gap: 12px; width: 100%; justify-content: center;}
+.google-btn img { width: 20px; height: 20px; }
+.separator { display: flex; align-items: center; text-align: center; margin: 20px 0; color: #aaa; }
+.separator::before, .separator::after { content: ''; flex: 1; border-bottom: 1px solid #ddd; }
+.separator:not(:empty)::before { margin-right: .25em; }
+.separator:not(:empty)::after { margin-left: .25em; }
+
+form { display: flex; flex-direction: column; gap: 15px; text-align: left; }
+input, textarea { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #ddd; font-family: var(--font-family); font-size: 1rem; transition: border-color 0.2s, box-shadow 0.2s; }
+input:focus, textarea:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(106, 17, 203, 0.2); outline: none; }
+textarea { min-height: 120px; resize: vertical; }
+
+.button-list { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+.action-btn { background: #f0f2f5; color: #555; border: 2px solid transparent; }
+.action-btn.selected { border-color: var(--primary-color); color: var(--primary-color); font-weight: 600; }
