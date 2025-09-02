@@ -16,9 +16,8 @@
     <nav class="sidebar" id="sidebar">
         <ul>
             <li><a href="#intro" class="nav-link">🏠 Intro</a></li>
-            <li><a href="#register" class="nav-link">👤 Registrasi</a></li>
-            <li><a href="#dashboard" class="nav-link">🚀 Dashboard</a></li>
-            <li><a href="#" id="logoutBtn" style="display: none;">🚪 Logout</a></li>
+            <li><a href="#register" class="nav-link">👤 Isi Data</a></li>
+            <li><a href="#dashboard" class="nav-link">🚀 Kirim Pesan</a></li>
         </ul>
     </nav>
 
@@ -33,18 +32,14 @@
 
         <section id="register" class="page">
             <div class="page-container">
-                <h2>Langkah Awal</h2>
-                <p>Masuk atau daftar untuk melanjutkan. Data Anda akan kami jaga kerahasiaannya.</p>
+                <h2>Lengkapi Data Diri Anda</h2>
+                <p>Informasi ini akan disertakan dalam pesan yang Anda kirim ke admin.</p>
                 <form id="registerForm">
                     <input type="text" id="name" placeholder="Nama Lengkap Anda" required>
                     <input type="tel" id="whatsapp" placeholder="No. WhatsApp (e.g., 62812...)" required>
-                    <input type="email" id="email" placeholder="Alamat Email" required>
-                    <button type="submit">Simpan & Lanjutkan</button>
+                    <input type="email" id="email" placeholder="Alamat Email (opsional)">
+                    <button type="submit">Lanjut ke Form Pesan</button>
                 </form>
-                <div class="separator"><span>atau</span></div>
-                <button id="googleSignInBtn" class="google-btn">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo"> Masuk dengan Google
-                </button>
             </div>
         </section>
 
@@ -66,7 +61,6 @@
     </main>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script src="app.js"></script>
