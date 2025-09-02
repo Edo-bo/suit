@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- GANTI DENGAN KONFIGURASI FIREBASE ANDA ---
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
+    const firebaseConfig = {
   apiKey: "AIzaSyCxC4PSHMlQHoSTrkNO7TaWaANdNWphNto",
   authDomain: "website2625.firebaseapp.com",
   projectId: "website2625",
@@ -11,11 +10,10 @@ const firebaseConfig = {
   measurementId: "G-JRXTC8Y0ND"
 };
 
-    // Inisialisasi Firebase
+
+    // Inisialisasi Firebase (hanya app dan database)
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
     const db = firebase.database();
-    const googleProvider = new firebase.auth.GoogleAuthProvider();
 
     // --- Selektor DOM ---
     const ui = {
@@ -26,13 +24,11 @@ const firebaseConfig = {
         startBtn: document.getElementById('startBtn'),
         registerForm: document.getElementById('registerForm'),
         messageForm: document.getElementById('messageForm'),
-        googleSignInBtn: document.getElementById('googleSignInBtn'),
-        logoutBtn: document.getElementById('logoutBtn'),
         actionButtons: document.querySelectorAll('.action-btn'),
-        nameInput: document.getElementById('name'),
-        emailInput: document.getElementById('email')
     };
     
+    // Variabel untuk menyimpan data pengguna sementara
+    let currentUserInfo = null;
     let selectedMessageType = null;
 
     // --- Logika UI & Navigasi ---
@@ -52,52 +48,37 @@ const firebaseConfig = {
     ui.navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            changePage(e.target.getAttribute('href').substring(1));
+            // Hanya izinkan navigasi ke dashboard jika data sudah diisi
+            const pageId = e.target.getAttribute('href').substring(1);
+            if (pageId === 'dashboard' && !currentUserInfo) {
+                alert('Harap isi data diri Anda terlebih dahulu.');
+                changePage('register');
+            } else {
+                changePage(pageId);
+            }
         });
     });
+    
     ui.startBtn.addEventListener('click', () => changePage('register'));
 
-    // --- Otentikasi Firebase ---
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            ui.logoutBtn.style.display = 'block';
-            db.ref('users/' + user.uid).once('value', snapshot => {
-                if (snapshot.exists()) {
-                    changePage('dashboard');
-                } else {
-                    ui.nameInput.value = user.displayName || '';
-                    ui.emailInput.value = user.email || '';
-                    changePage('register');
-                }
-            });
-        } else {
-            ui.logoutBtn.style.display = 'none';
-            changePage('intro');
-        }
-    });
-
-    ui.googleSignInBtn.addEventListener('click', () => {
-        auth.signInWithPopup(googleProvider).catch(err => alert(err.message));
-    });
-
-    ui.logoutBtn.addEventListener('click', () => auth.signOut());
-
-    // --- Interaksi Database Firebase ---
+    // --- Logika Form ---
+    
+    // 1. Tangani form data diri
     ui.registerForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const user = auth.currentUser;
-        if (!user) return alert('Terjadi kesalahan, silakan login kembali.');
-
-        db.ref('users/' + user.uid).set({
-            name: ui.nameInput.value,
+        
+        // Simpan data ke variabel sementara
+        currentUserInfo = {
+            name: document.getElementById('name').value,
             whatsapp: document.getElementById('whatsapp').value,
-            email: ui.emailInput.value
-        }).then(() => {
-            alert('Data berhasil disimpan!');
-            changePage('dashboard');
-        }).catch(err => alert(err.message));
+            email: document.getElementById('email').value,
+        };
+
+        alert('Data berhasil disimpan! Silakan lanjutkan mengisi pesan.');
+        changePage('dashboard');
     });
 
+    // 2. Pilih jenis pesan
     ui.actionButtons.forEach(button => {
         button.addEventListener('click', () => {
             ui.actionButtons.forEach(btn => btn.classList.remove('selected'));
@@ -106,27 +87,41 @@ const firebaseConfig = {
         });
     });
 
+    // 3. Tangani form pengiriman pesan
     ui.messageForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const user = auth.currentUser;
         const message = document.getElementById('userMessage').value;
 
-        if (!user) return alert('Anda harus login untuk mengirim pesan.');
+        // Validasi
+        if (!currentUserInfo) {
+            alert('Sesi Anda telah berakhir. Harap isi kembali data diri Anda.');
+            changePage('register');
+            return;
+        }
         if (!selectedMessageType) return alert('Silakan pilih jenis pesan terlebih dahulu.');
         if (!message.trim()) return alert('Pesan tidak boleh kosong.');
 
-        const newRequestRef = db.ref('requests').push();
-        newRequestRef.set({
-            userId: user.uid,
+        // Gabungkan data pengguna dengan data pesan
+        const requestData = {
+            senderInfo: currentUserInfo, // Data dari form pertama
             type: selectedMessageType,
             message: message,
             status: 'pending',
             timestamp: firebase.database.ServerValue.TIMESTAMP
-        }).then(() => {
-            alert('Pesan Anda berhasil terkirim ke admin!');
-            ui.messageForm.reset();
-            ui.actionButtons.forEach(btn => btn.classList.remove('selected'));
-            selectedMessageType = null;
-        }).catch(err => alert(err.message));
+        };
+
+        // Kirim ke Firebase Realtime Database
+        db.ref('requests').push(requestData)
+          .then(() => {
+              alert('Pesan Anda berhasil terkirim ke admin!');
+              ui.messageForm.reset();
+              ui.actionButtons.forEach(btn => btn.classList.remove('selected'));
+              selectedMessageType = null;
+              // Opsional: kembalikan ke halaman intro setelah berhasil
+              // changePage('intro'); 
+          })
+          .catch(err => {
+              alert('Gagal mengirim pesan: ' + err.message);
+          });
     });
 });
